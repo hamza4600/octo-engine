@@ -9,6 +9,7 @@ import { log } from "@/lib/log";
 import { redis } from "@/lib/redis";
 import type { AuditUnavailableReason } from "@/lib/audit-unavailable-copy";
 import {
+  ensureSessionRepo,
   findAssistantMessageText,
   getLedgerBullets,
   getSession,
@@ -98,6 +99,14 @@ export async function POST(req: Request): Promise<Response> {
       log.warn("audit.message_not_found", { sessionId, messageId });
       await persistUnavailable(sessionId, messageId, "MESSAGE_NOT_FOUND");
       return NextResponse.json({ ok: false as const, reason: "MESSAGE_NOT_FOUND" }, { status: 200, headers: NO_STORE });
+    }
+
+    try {
+      await ensureSessionRepo(session);
+    } catch (err) {
+      log.warn("audit.repo_unavailable", { sessionId, messageId, err });
+      await persistUnavailable(sessionId, messageId, "AUDIT_ERROR");
+      return NextResponse.json({ ok: false as const, reason: "AUDIT_ERROR" }, { status: 200, headers: NO_STORE });
     }
 
     const citations = parseCitations(answer);

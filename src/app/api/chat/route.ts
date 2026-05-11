@@ -14,7 +14,8 @@ import { extractAndAppendLedger } from "@/lib/ledger";
 import { modelChat } from "@/lib/llm-provider";
 import { log } from "@/lib/log";
 import { buildAgentSystemPrompt } from "@/lib/prompts/system";
-import { appendAssistantMessage, getLedgerBullets, getMessagesCount, getSession, uiAssistantPlainText } from "@/lib/session";
+import { appendAssistantMessage, ensureSessionRepo, getLedgerBullets, getMessagesCount, getSession, uiAssistantPlainText } from "@/lib/session";
+import { RepoError } from "@/lib/errors";
 import { createInvestigatorTools } from "@/lib/tools/index";
 
 export const runtime = "nodejs";
@@ -49,6 +50,17 @@ export async function POST(req: Request): Promise<Response> {
   const session = await getSession(sessionId);
   if (!session) {
     return NextResponse.json({ error: "Session not found", code: "SESSION_NOT_FOUND" }, { status: 404, headers: NO_STORE });
+  }
+
+  try {
+    await ensureSessionRepo(session);
+  } catch (err) {
+    const code = err instanceof RepoError ? err.code : "REPO_MISSING";
+    log.error("chat.repo_unavailable", { sessionId, code, err });
+    return NextResponse.json(
+      { error: "Repository files are unavailable. Paste the GitHub URL again to re-create the session.", code },
+      { status: 503, headers: NO_STORE },
+    );
   }
 
   const tools = createInvestigatorTools(sessionId);

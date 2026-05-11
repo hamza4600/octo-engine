@@ -7,6 +7,7 @@ import { log } from "@/lib/log";
 import { StorageError } from "./errors";
 
 import { checkRepoMetadata, cloneRepo, parseGithubUrl } from "./repo";
+import { RepoError } from "./errors";
 import { sessionRoot } from "./paths";
 import type { RepoSummary } from "./repoSummary";
 import { buildRepoSummary } from "./repoSummary";
@@ -157,6 +158,62 @@ export async function createSession(url: string): Promise<SessionRecord> {
 
   log.info("session.created", { sessionId, owner: parsed.owner, repo: parsed.repo });
   return record;
+}
+
+const inFlightRepoEnsure = new Map<string, Promise<void>>();
+
+async function repoExistsOnDisk(repoPath: string): Promise<boolean> {
+  try {
+    const st = await fs.stat(repoPath);
+    if (!st.isDirectory()) return false;
+    const entries = await fs.readdir(repoPath);
+    return entries.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Ensure the session's cloned repo exists on disk. Redis can outlive `/tmp`
+ * (Vercel cross-invocation, OS cleanup of TEMP, antivirus). Re-clones from the
+ * stored url + default branch when the dir is missing or empty. Concurrent
+ * callers for the same sessionId share one in-flight clone.
+ */
+export async function ensureSessionRepo(session: SessionRecord): Promise<void> {
+  if (await repoExistsOnDisk(session.repoPath)) return;
+
+  const existing = inFlightRepoEnsure.get(session.sessionId);
+  if (existing) {
+    await existing;
+    return;
+  }
+
+  const promise = (async () => {
+    log.warn("session.repo_missing_reclone", {
+      sessionId: session.sessionId,
+      repoPath: session.repoPath,
+    });
+    try {
+      await cloneRepo(session.sessionId, session.url, session.defaultBranch);
+      log.info("session.repo_reclone_done", { sessionId: session.sessionId });
+    } catch (err) {
+      log.error("session.repo_reclone_failed", { sessionId: session.sessionId, err });
+      if (err instanceof RepoError) {
+        throw err;
+      }
+      throw new RepoError(
+        err instanceof Error ? err.message : "Failed to re-clone repository",
+        "CLONE_FAILED",
+      );
+    }
+  })();
+
+  inFlightRepoEnsure.set(session.sessionId, promise);
+  try {
+    await promise;
+  } finally {
+    inFlightRepoEnsure.delete(session.sessionId);
+  }
 }
 
 /** Latest persisted assistant UI message text by id (Redis messages list; audit path). */

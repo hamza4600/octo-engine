@@ -10,6 +10,8 @@ export function friendlyErrorForCode(code: string | undefined): string {
       return "Repository was not found or is not accessible.";
     case "SESSION_NOT_FOUND":
       return "Session expired or missing. Paste the GitHub URL again.";
+    case "REPO_MISSING":
+      return "Repository files were lost from temporary storage. Paste the GitHub URL again to re-clone.";
     case "TOO_LARGE":
       return "Repository is too large for this demo.";
     case "CLONE_TIMEOUT":
