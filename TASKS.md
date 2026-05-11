@@ -64,15 +64,15 @@ Format: `[ ] T## (Xm) Task — file(s) touched`
 
 ## Phase 3 — Audit layer (1.5h budget)
 
-- [ ] T39 (10m) `src/lib/audit/parseCitations.ts` — regex extract `path:LINE` and `path:START-END`, dedupe
-- [ ] T39a (5m) `scripts/test-citations.ts` — assert `parseCitations` against 8 fixtures: bare `src/foo.ts:42`, range `src/foo.ts:42-58`, inside backticks `` `src/foo.ts:1` ``, inside markdown link `[x](src/foo.ts:1)`, leading dot `./src/foo.ts:1`, Windows-style `src\\foo.ts:1` (must be rejected), trailing punctuation `src/foo.ts:42.`, multiple per line `see src/a.ts:1 and src/b.ts:2`. Run with `npx tsx`.
-- [ ] T40 (15m) `src/lib/audit/programmaticCheck.ts` — for each citation: file exists? lines in range? return `{citation, valid, reason, snippet}[]`
-- [ ] T41 (5m) `src/lib/prompts/judge.ts` — separate, terse system prompt for the judge
-- [ ] T42 (20m) `src/lib/audit/judge.ts` — `generateObject` with gpt-4o-mini, Zod schema for `{verdict, claims, risks, contradictions}`, no chat history bleed, temperature 0
-- [ ] T43 (15m) `src/app/api/audit/route.ts` — POST runs both checks in parallel, persists to `audit:{sessionId}:{messageId}`; GET returns the audit (or `pending`)
-- [ ] T44 (10m) Hook audit trigger from `/api/chat` `onFinish` (fire-and-forget POST, don't await)
-- [ ] T45 (15m) `src/components/audit-badge.tsx` — green/amber/red, polls GET `/api/audit` every 1s for ≤15s
-- [ ] T46 (10m) `src/components/audit-detail-sheet.tsx` — opens on badge click, lists per-claim verdicts, invalid citations, contradictions
+- [x] T39 (10m) `src/lib/audit/parseCitations.ts` — regex extract `path:LINE` and `path:START-END`, dedupe
+- [x] T39a (5m) `scripts/test-citations.ts` — assert `parseCitations` against 8 fixtures: bare `src/foo.ts:42`, range `src/foo.ts:42-58`, inside backticks `` `src/foo.ts:1` ``, inside markdown link `[x](src/foo.ts:1)`, leading dot `./src/foo.ts:1`, Windows-style `src\\foo.ts:1` (must be rejected), trailing punctuation `src/foo.ts:42.`, multiple per line `see src/a.ts:1 and src/b.ts:2`. Run with `npx tsx`.
+- [x] T40 (15m) `src/lib/audit/programmaticCheck.ts` — for each citation: file exists? lines in range? return `{citation, valid, reason, snippet}[]`. Bonus: `scripts/test-programmatic-check.ts` covers FILE_NOT_FOUND / OUT_OF_RANGE / PATH_ESCAPE.
+- [x] T41 (5m) `src/lib/prompts/judge.ts` — separate, terse system prompt for the judge
+- [x] T42 (20m) `src/lib/audit/judge.ts` — `generateObject` with gpt-4o-mini, Zod schema for `{verdict, claims, risks, contradictions}`, no chat history bleed, temperature 0
+- [x] T43 (15m) `src/app/api/audit/route.ts` — POST runs both checks in parallel, persists to `audit:{sessionId}:{messageId}`; GET returns the audit (or `pending`/`unavailable` w/ reason)
+- [x] T44 (10m) Hook audit trigger from `/api/chat` `onFinish` (fire-and-forget POST, don't await)
+- [x] T45 (15m) `src/components/audit-badge.tsx` — green/amber/red, polls GET `/api/audit` every 1s for ≤15s
+- [x] T46 (10m) `src/components/audit-detail-sheet.tsx` — opens on badge click, lists per-claim verdicts, invalid citations, contradictions
 
 ---
 

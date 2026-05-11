@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C D:/Personal/codebase-investigator log --oneline --all)",
+      "Bash(git *)",
+      "Bash(npm run *)",
+      "Bash(npx tsx *)",
+      "Bash(set REPRO_URL=https://github.com/hamza4600/go-scrapper)",
+      "Bash(curl -sS -o /dev/null -w \"%{http_code}\\\\n\" https://api.github.com/repos/hamza4600/go-scrapper -H \"Accept: application/vnd.github+json\" -H \"User-Agent: codebase-investigator-mvp\")",
+      "Bash(curl -sS -o /dev/null -w \"%{http_code}\\\\n\" https://api.github.com/repos/sindresorhus/is-odd -H \"Accept: application/vnd.github+json\" -H \"User-Agent: codebase-investigator-mvp\")"
+    ]
+  }
+}

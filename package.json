@@ -12,6 +12,7 @@
     "smoke": "tsx scripts/smoke.ts",
     "test-parse": "tsx scripts/test-parse.ts",
     "test-citations": "tsx scripts/test-citations.ts",
+    "test-programmatic": "tsx scripts/test-programmatic-check.ts",
     "demo:questions": "tsx scripts/demo-questions.ts",
     "demo:prewarm": "tsx scripts/prewarm-session.ts"
   },
