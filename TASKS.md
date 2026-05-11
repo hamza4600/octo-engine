@@ -88,13 +88,13 @@ Format: `[ ] T## (Xm) Task — file(s) touched`
 
 ## Phase 5 — Polish + deploy (1h budget)
 
-- [ ] T52 (10m) `src/components/citation-chip.tsx` — clickable; opens file viewer Sheet
-- [ ] T53 (10m) `src/components/file-viewer.tsx` — fetch file, render with line numbers, highlight cited range
-- [ ] T54 (5m) Loading states for all async UI (cloning, thinking, tool exec, audit pending)
-- [ ] T55 (5m) `src/app/error.tsx` and `src/app/not-found.tsx`
-- [ ] T56 (5m) Empty state on landing: 3-line how-to + sample URL
-- [ ] T56a (10m) `README.md` already drafted — verify links resolve, drop in the live deploy URL once T58 is done, confirm "audit decision in 3 sentences" is above the fold on GitHub's rendered preview. (Promoted from stretch S01 — required deliverable.)
-- [ ] T57 (5m) `Cache-Control: no-store` on all `/api/*` responses
+- [x] T52 (10m) `src/components/citation-chip.tsx` — clickable; opens file viewer Sheet
+- [x] T53 (10m) `src/components/file-viewer.tsx` — fetch file, render with line numbers, highlight cited range
+- [x] T54 (5m) Loading states for all async UI (cloning, thinking, tool exec, audit pending)
+- [x] T55 (5m) `src/app/error.tsx` and `src/app/not-found.tsx`
+- [x] T56 (5m) Empty state on landing: 3-line how-to + sample URL
+- [~] T56a (10m) `README.md` already drafted — verify links resolve, drop in the live deploy URL once T58 is done, confirm "audit decision in 3 sentences" is above the fold on GitHub's rendered preview. (Promoted from stretch S01 — required deliverable.)
+- [x] T57 (5m) `Cache-Control: no-store` on all `/api/*` responses
 - [ ] T58 (10m) `vercel deploy --prod`; set env vars in Vercel dashboard
 - [ ] T59 (5m) Enable Fluid Compute in Vercel project settings
 - [ ] T60 (5m) Verify `maxDuration` in deployed function logs
