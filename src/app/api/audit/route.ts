@@ -7,6 +7,7 @@ import { runAuditJudge, type JudgeResult } from "@/lib/audit/judge";
 import { mergeAuditVerdict, type OverallVerdict } from "@/lib/audit/verdict";
 import { log } from "@/lib/log";
 import { redis } from "@/lib/redis";
+import type { AuditUnavailableReason } from "@/lib/audit-unavailable-copy";
 import {
   findAssistantMessageText,
   getLedgerBullets,
@@ -43,9 +44,13 @@ type StoredAuditComplete = {
   judge: JudgeResult;
 };
 
-async function persistUnavailable(sessionId: string, messageId: string): Promise<void> {
+async function persistUnavailable(
+  sessionId: string,
+  messageId: string,
+  reason: AuditUnavailableReason,
+): Promise<void> {
   const ttl = SESSION_TTL_SECONDS;
-  const payload = JSON.stringify({ status: "unavailable" as const });
+  const payload = JSON.stringify({ status: "unavailable" as const, reason });
   await redis.set(auditPayloadKey(sessionId, messageId), payload, { ex: ttl });
   await redis.set(auditStatusRedisKey(sessionId, messageId), "unavailable", { ex: ttl });
 }
@@ -73,7 +78,7 @@ export async function POST(req: Request): Promise<Response> {
       try {
         const obj = JSON.parse(existing) as { status?: string };
         if (obj.status === "complete" || obj.status === "unavailable") {
-          return NextResponse.json({ ok: true as const, cached: true }, { status: 200, headers: NO_STORE });
+          return NextResponse.json({ ok: true as const, cached: true as const }, { status: 200, headers: NO_STORE });
         }
       } catch {
         /* fall through */
@@ -84,14 +89,14 @@ export async function POST(req: Request): Promise<Response> {
 
     const session = await getSession(sessionId);
     if (!session) {
-      await persistUnavailable(sessionId, messageId);
+      await persistUnavailable(sessionId, messageId, "SESSION_NOT_FOUND");
       return NextResponse.json({ ok: false as const, reason: "SESSION_NOT_FOUND" }, { status: 200, headers: NO_STORE });
     }
 
     const answer = await findAssistantMessageText(sessionId, messageId);
     if (answer === null) {
       log.warn("audit.message_not_found", { sessionId, messageId });
-      await persistUnavailable(sessionId, messageId);
+      await persistUnavailable(sessionId, messageId, "MESSAGE_NOT_FOUND");
       return NextResponse.json({ ok: false as const, reason: "MESSAGE_NOT_FOUND" }, { status: 200, headers: NO_STORE });
     }
 
@@ -140,7 +145,7 @@ export async function POST(req: Request): Promise<Response> {
   } catch (err) {
     log.error("audit.post_failed", { sessionId, messageId, err });
     try {
-      await persistUnavailable(sessionId, messageId);
+      await persistUnavailable(sessionId, messageId, "AUDIT_ERROR");
     } catch {
       /* ignore */
     }
@@ -161,6 +166,10 @@ export async function GET(req: NextRequest): Promise<Response> {
     if (raw) {
       const parsed = JSON.parse(raw) as Record<string, unknown>;
       if (parsed.status === "unavailable") {
+        const r = parsed.reason;
+        if (typeof r === "string") {
+          return NextResponse.json({ status: "unavailable" as const, reason: r }, { status: 200, headers: NO_STORE });
+        }
         return NextResponse.json({ status: "unavailable" as const }, { status: 200, headers: NO_STORE });
       }
       if (parsed.status === "complete") {
@@ -176,6 +185,6 @@ export async function GET(req: NextRequest): Promise<Response> {
     return NextResponse.json({ status: "pending" as const }, { status: 200, headers: NO_STORE });
   } catch (err) {
     log.error("audit.get_failed", { sessionId, messageId, err });
-    return NextResponse.json({ status: "unavailable" as const }, { status: 200, headers: NO_STORE });
+    return NextResponse.json({ status: "unavailable" as const, reason: "REDIS_ERROR" }, { status: 200, headers: NO_STORE });
   }
 }

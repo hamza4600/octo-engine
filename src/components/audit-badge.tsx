@@ -6,6 +6,10 @@ import * as React from "react";
 import { Badge } from "@/components/ui/badge";
 
 import { AuditDetailSheet, type AuditDetailPayload } from "@/components/audit-detail-sheet";
+import {
+  auditUnavailableBadgeLabel,
+  auditUnavailableBadgeTitle,
+} from "@/lib/audit-unavailable-copy";
 
 const POLL_MS = 1000;
 const MAX_POLLS = 15;
@@ -31,9 +35,13 @@ function badgeClass(phase: "pending" | "complete" | "unavailable", verdict?: str
   }
 }
 
-function badgeLabel(phase: "pending" | "complete" | "unavailable", verdict?: string): string {
+function badgeLabel(
+  phase: "pending" | "complete" | "unavailable",
+  verdict?: string,
+  unavailableReason?: string,
+): string {
   if (phase === "pending") return "Audit · pending";
-  if (phase === "unavailable") return "Audit · unavailable";
+  if (phase === "unavailable") return auditUnavailableBadgeLabel(unavailableReason);
   return `Audit · ${verdict ?? "done"}`;
 }
 
@@ -45,11 +53,15 @@ export type AuditBadgeProps = Readonly<{
 export function AuditBadge({ sessionId, messageId }: AuditBadgeProps): React.ReactElement {
   const [phase, setPhase] = React.useState<"pending" | "complete" | "unavailable">("pending");
   const [payload, setPayload] = React.useState<AuditDetailPayload | null>(null);
+  const [unavailableReason, setUnavailableReason] = React.useState<string | undefined>(undefined);
   const [sheetOpen, setSheetOpen] = React.useState(false);
 
   React.useEffect(() => {
     let cancelled = false;
     let attempts = 0;
+    setPhase("pending");
+    setPayload(null);
+    setUnavailableReason(undefined);
 
     const tick = async (): Promise<void> => {
       if (cancelled) return;
@@ -62,16 +74,20 @@ export function AuditBadge({ sessionId, messageId }: AuditBadgeProps): React.Rea
         const json = (await res.json()) as Record<string, unknown>;
         if (cancelled) return;
         if (json.status === "complete") {
+          setUnavailableReason(undefined);
           setPayload(json as AuditDetailPayload);
           setPhase("complete");
           return;
         }
         if (json.status === "unavailable") {
+          const r = json.reason;
+          setUnavailableReason(typeof r === "string" ? r : undefined);
           setPhase("unavailable");
           return;
         }
       } catch {
         if (!cancelled) {
+          setUnavailableReason("CLIENT_FETCH_ERROR");
           setPhase("unavailable");
         }
         return;
@@ -79,6 +95,7 @@ export function AuditBadge({ sessionId, messageId }: AuditBadgeProps): React.Rea
       if (!cancelled && attempts < MAX_POLLS) {
         window.setTimeout(() => void tick(), POLL_MS);
       } else if (!cancelled && attempts >= MAX_POLLS) {
+        setUnavailableReason("POLL_TIMEOUT");
         setPhase("unavailable");
       }
     };
@@ -92,9 +109,16 @@ export function AuditBadge({ sessionId, messageId }: AuditBadgeProps): React.Rea
 
   const verdict = payload?.verdict;
 
+  const unavailableTitle = phase === "unavailable" ? auditUnavailableBadgeTitle(unavailableReason) : undefined;
+
   return (
     <>
-      <button type="button" className="mt-2 inline-flex" onClick={() => setSheetOpen(true)}>
+      <button
+        type="button"
+        className="mt-2 inline-flex"
+        title={unavailableTitle}
+        onClick={() => setSheetOpen(true)}
+      >
         <Badge
           variant="outline"
           className={`cursor-pointer font-normal inline-flex items-center gap-1 ${badgeClass(phase, verdict)}`}
@@ -102,10 +126,16 @@ export function AuditBadge({ sessionId, messageId }: AuditBadgeProps): React.Rea
           {phase === "pending" ? (
             <Loader2Icon className="size-3 animate-spin shrink-0" aria-hidden />
           ) : null}
-          {badgeLabel(phase, verdict)}
+          {badgeLabel(phase, verdict, unavailableReason)}
         </Badge>
       </button>
-      <AuditDetailSheet open={sheetOpen} onOpenChange={setSheetOpen} data={payload} />
+      <AuditDetailSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        data={payload}
+        badgePhase={phase}
+        unavailableReason={unavailableReason}
+      />
     </>
   );
 }

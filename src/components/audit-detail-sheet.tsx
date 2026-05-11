@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { auditUnavailableHelp } from "@/lib/audit-unavailable-copy";
 
 /** Mirrors `GET /api/audit` successful payload — kept UI-local to avoid bundling server audit modules. */
 export type AuditDetailPayload = {
@@ -34,9 +35,21 @@ export type AuditDetailSheetProps = Readonly<{
   open: boolean;
   onOpenChange: (open: boolean) => void;
   data: AuditDetailPayload | null;
+  /** Drives empty / error copy when `data` is null. */
+  badgePhase?: "pending" | "complete" | "unavailable";
+  /** Server or client reason when `badgePhase` is `unavailable`. */
+  unavailableReason: string | undefined;
 }>;
 
-export function AuditDetailSheet({ open, onOpenChange, data }: AuditDetailSheetProps): React.ReactElement {
+export function AuditDetailSheet({
+  open,
+  onOpenChange,
+  data,
+  badgePhase,
+  unavailableReason,
+}: AuditDetailSheetProps): React.ReactElement {
+  const unavailableCopy = badgePhase === "unavailable" ? auditUnavailableHelp(unavailableReason) : null;
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="sm:max-w-md">
@@ -47,9 +60,7 @@ export function AuditDetailSheet({ open, onOpenChange, data }: AuditDetailSheetP
           </SheetDescription>
         </SheetHeader>
 
-        {!data ? (
-          <p className="text-sm text-muted-foreground px-4">No audit data loaded.</p>
-        ) : (
+        {data ? (
           <ScrollArea className="h-[calc(100vh-8rem)] px-4 pb-6">
             <div className="space-y-4 text-sm">
               <div>
@@ -123,6 +134,22 @@ export function AuditDetailSheet({ open, onOpenChange, data }: AuditDetailSheetP
               </div>
             </div>
           </ScrollArea>
+        ) : badgePhase === "unavailable" && unavailableCopy ? (
+          <ScrollArea className="h-[calc(100vh-8rem)] px-4 pb-6">
+            <div className="space-y-3 text-sm">
+              <p className="font-medium text-foreground">{unavailableCopy.headline}</p>
+              <p className="text-muted-foreground">Try the following:</p>
+              <ol className="list-decimal space-y-2 pl-4 text-muted-foreground">
+                {unavailableCopy.steps.map((step, i) => (
+                  <li key={i}>{step}</li>
+                ))}
+              </ol>
+            </div>
+          </ScrollArea>
+        ) : badgePhase === "pending" ? (
+          <p className="text-sm text-muted-foreground px-4">Audit is still running. Close and check again in a moment.</p>
+        ) : (
+          <p className="text-sm text-muted-foreground px-4">No audit data loaded.</p>
         )}
       </SheetContent>
     </Sheet>
