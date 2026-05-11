@@ -15,7 +15,8 @@ export const judgeOutputSchema = z.object({
     z.object({
       text: z.string(),
       supported: z.boolean(),
-      evidence: z.string().optional(),
+      /** Nullable so structured-output JSON schema lists every property in `required`. */
+      evidence: z.string().nullable(),
     }),
   ),
   risks: z.array(z.string()),

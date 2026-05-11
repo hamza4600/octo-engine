@@ -14,10 +14,17 @@ export function mergeAuditVerdict(programmatic: ProgrammaticRow[], judge: JudgeR
     }
     return "partial";
   }
-  if (judge.verdict === "fail") {
+
+  const noExtractedCitations = programmatic.length === 0;
+  // With zero citations there is nothing programmatically invalid; a judge "fail" here
+  // means "claims not evidenced," not broken citations — surface as partial for UX.
+  const effectiveJudge: "pass" | "partial" | "fail" =
+    noExtractedCitations && judge.verdict === "fail" ? "partial" : judge.verdict;
+
+  if (effectiveJudge === "fail") {
     return "fail";
   }
-  if (judge.verdict === "partial") {
+  if (effectiveJudge === "partial") {
     return "partial";
   }
   return "pass";

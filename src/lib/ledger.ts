@@ -17,7 +17,8 @@ const factsSchema = z.object({
     .array(
       z.object({
         fact: z.string(),
-        citation: z.string().optional(),
+        /** Nullable (not omitted) so OpenAI JSON-schema `required` includes every key. */
+        citation: z.string().nullable(),
       }),
     )
     .max(6),

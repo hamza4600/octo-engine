@@ -136,16 +136,16 @@ export async function POST(req: Request): Promise<Response> {
           const turnIndex = await getMessagesCount(sessionId);
           const text = uiAssistantPlainText(responseMessage);
           void extractAndAppendLedger(sessionId, text, turnIndex).catch(() => undefined);
+          const origin = getRequestOrigin(req);
+          void fetch(`${origin}/api/audit`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              sessionId,
+              messageId: responseMessage.id,
+            }),
+          }).catch(() => undefined);
         }
-        const origin = getRequestOrigin(req);
-        void fetch(`${origin}/api/audit`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sessionId,
-            messageId: responseMessage.id,
-          }),
-        }).catch(() => undefined);
       },
     });
   } catch (err) {

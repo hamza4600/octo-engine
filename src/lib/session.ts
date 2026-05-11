@@ -53,10 +53,16 @@ export async function getLedgerBullets(sessionId: string): Promise<string[]> {
     const out: string[] = [];
     for (const raw of rows) {
       try {
-        const j = JSON.parse(raw) as LedgerRow;
-        if (typeof j.fact === "string") {
-          out.push(typeof j.citation === "string" && j.citation.length > 0 ? `${j.fact} (${j.citation})` : j.fact);
+        const j =
+          typeof raw === "string"
+            ? (JSON.parse(raw) as LedgerRow)
+            : typeof raw === "object" && raw !== null
+              ? (raw as LedgerRow)
+              : null;
+        if (!j || typeof j.fact !== "string") {
+          continue;
         }
+        out.push(typeof j.citation === "string" && j.citation.length > 0 ? `${j.fact} (${j.citation})` : j.fact);
       } catch {
         continue;
       }
@@ -223,10 +229,15 @@ export async function findAssistantMessageText(sessionId: string, messageId: str
     for (let i = rawList.length - 1; i >= 0; i--) {
       try {
         const rawItem = rawList[i];
-        if (typeof rawItem !== "string") {
+        const msg: Record<string, unknown> | null =
+          typeof rawItem === "string"
+            ? (JSON.parse(rawItem) as Record<string, unknown>)
+            : typeof rawItem === "object" && rawItem !== null
+              ? (rawItem as Record<string, unknown>)
+              : null;
+        if (!msg) {
           continue;
         }
-        const msg = JSON.parse(rawItem) as Record<string, unknown>;
         if (msg.id !== messageId || msg.role !== "assistant") {
           continue;
         }

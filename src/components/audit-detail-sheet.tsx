@@ -72,19 +72,34 @@ export function AuditDetailSheet({
 
               <div>
                 <p className="font-medium text-foreground">Programmatic</p>
-                <p className="text-muted-foreground">
-                  {data.programmatic.valid}/{data.programmatic.totalCitations} citations verified
-                </p>
-                {data.programmatic.invalid.length > 0 ? (
-                  <ul className="mt-2 list-disc space-y-1 pl-4 text-muted-foreground">
-                    {data.programmatic.invalid.map((inv) => (
-                      <li key={inv.citation}>
-                        <span className="font-mono text-xs">{inv.citation}</span> — {inv.reason}
-                      </li>
-                    ))}
-                  </ul>
+                {data.programmatic.totalCitations === 0 ? (
+                  <>
+                    <p className="text-muted-foreground">
+                      No file citations detected in this answer (expected{" "}
+                      <span className="font-mono text-xs">path/to/file.ext:LINE</span> or a line range).
+                    </p>
+                    <p className="mt-2 text-muted-foreground">
+                      Without citations, checks cannot tie claims to the cloned repository. The judge section
+                      still reviews whether claims look supportable from the text alone.
+                    </p>
+                  </>
                 ) : (
-                  <p className="mt-1 text-muted-foreground">All cited ranges resolved to files.</p>
+                  <>
+                    <p className="text-muted-foreground">
+                      {data.programmatic.valid}/{data.programmatic.totalCitations} citations verified
+                    </p>
+                    {data.programmatic.invalid.length > 0 ? (
+                      <ul className="mt-2 list-disc space-y-1 pl-4 text-muted-foreground">
+                        {data.programmatic.invalid.map((inv) => (
+                          <li key={inv.citation}>
+                            <span className="font-mono text-xs">{inv.citation}</span> — {inv.reason}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-1 text-muted-foreground">All cited ranges resolved to files.</p>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -92,6 +107,12 @@ export function AuditDetailSheet({
 
               <div>
                 <p className="font-medium text-foreground">Judge ({data.judge.verdict})</p>
+                {data.verdict !== data.judge.verdict ? (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Overall verdict blends programmatic checks with the judge; they can differ (e.g. missing
+                    citations).
+                  </p>
+                ) : null}
                 {data.judge.error ? (
                   <p className="text-muted-foreground text-xs mt-1">{data.judge.error}</p>
                 ) : null}

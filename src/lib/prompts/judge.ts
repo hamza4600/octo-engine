@@ -17,6 +17,11 @@ export function judgeSystemInstructions(): string {
     "3. Flag contradictions between this answer and the ledger bullets (if any).",
     "4. Note risks (missing evidence, speculative language despite citations).",
     "",
+    "When programmatic verification shows zero citations (total 0):",
+    "- Use verdict `partial` if the answer makes factual claims about the repo without path:line evidence.",
+    "- Reserve verdict `fail` for clear falsehoods or direct contradictions with snippets/ledger, not merely for missing citation format.",
+    "- Use `pass` only if the answer avoids substantive repo claims (e.g. clarifying questions, refusal to speculate).",
+    "",
     "Return STRICT JSON matching the schema only — no markdown fences.",
   ].join("\n");
 }

@@ -35,6 +35,21 @@ function auditStatusRedisKey(sessionId: string, messageId: string): string {
   return `audit:${sessionId}:${messageId}:status`;
 }
 
+/** Upstash may return parsed JSON objects for values that were stored as JSON strings. */
+function parseStoredAuditPayload(raw: unknown): Record<string, unknown> | null {
+  if (typeof raw === "string") {
+    try {
+      return JSON.parse(raw) as Record<string, unknown>;
+    } catch {
+      return null;
+    }
+  }
+  if (typeof raw === "object" && raw !== null) {
+    return raw as Record<string, unknown>;
+  }
+  return null;
+}
+
 type StoredAuditComplete = {
   status: "complete";
   verdict: OverallVerdict;
@@ -77,13 +92,9 @@ export async function POST(req: Request): Promise<Response> {
   try {
     const existing = await redis.get<string>(dataKey);
     if (existing) {
-      try {
-        const obj = JSON.parse(existing) as { status?: string };
-        if (obj.status === "complete" || obj.status === "unavailable") {
-          return NextResponse.json({ ok: true as const, cached: true as const }, { status: 200, headers: NO_STORE });
-        }
-      } catch {
-        /* fall through */
+      const obj = parseStoredAuditPayload(existing);
+      if (obj?.status === "complete" || obj?.status === "unavailable") {
+        return NextResponse.json({ ok: true as const, cached: true as const }, { status: 200, headers: NO_STORE });
       }
     }
 
@@ -174,15 +185,15 @@ export async function GET(req: NextRequest): Promise<Response> {
     const dataKey = auditPayloadKey(sessionId, messageId);
     const raw = await redis.get<string>(dataKey);
     if (raw) {
-      const parsed = JSON.parse(raw) as Record<string, unknown>;
-      if (parsed.status === "unavailable") {
+      const parsed = parseStoredAuditPayload(raw);
+      if (parsed?.status === "unavailable") {
         const r = parsed.reason;
         if (typeof r === "string") {
           return NextResponse.json({ status: "unavailable" as const, reason: r }, { status: 200, headers: NO_STORE });
         }
         return NextResponse.json({ status: "unavailable" as const }, { status: 200, headers: NO_STORE });
       }
-      if (parsed.status === "complete") {
+      if (parsed?.status === "complete") {
         return NextResponse.json(parsed as StoredAuditComplete, { status: 200, headers: NO_STORE });
       }
     }
