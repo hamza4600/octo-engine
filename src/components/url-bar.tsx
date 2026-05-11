@@ -48,6 +48,7 @@ export function UrlBar({ onSessionReady }: UrlBarProps): React.ReactElement {
         return;
       }
       const data = (await res.json()) as { sessionId: string; owner: string; repo: string };
+      toast.success(`Repository ready — you can ask questions about ${data.owner}/${data.repo}.`);
       setLocked({ owner: data.owner, repo: data.repo });
       onSessionReady({
         sessionId: data.sessionId,

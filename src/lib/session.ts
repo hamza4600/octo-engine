@@ -6,7 +6,7 @@ import { log } from "@/lib/log";
 
 import { StorageError } from "./errors";
 
-import { checkRepoMetadata, cloneRepo, parseGithubUrl, readDefaultBranch } from "./repo";
+import { checkRepoMetadata, cloneRepo, parseGithubUrl } from "./repo";
 import { sessionRoot } from "./paths";
 import type { RepoSummary } from "./repoSummary";
 import { buildRepoSummary } from "./repoSummary";
@@ -118,14 +118,12 @@ export async function getSession(sessionId: string): Promise<SessionRecord | nul
 
 export async function createSession(url: string): Promise<SessionRecord> {
   const parsed = parseGithubUrl(url);
-  await checkRepoMetadata(parsed);
+  const { defaultBranch } = await checkRepoMetadata(parsed);
 
   const sessionId = `ses_${randomUUID().replace(/-/g, "")}`;
   const root = sessionRoot(sessionId);
 
-  await cloneRepo(sessionId, url);
-
-  const defaultBranch = await readDefaultBranch(sessionId);
+  await cloneRepo(sessionId, url, defaultBranch);
   const summary = await buildRepoSummary(root);
   const now = Date.now();
 

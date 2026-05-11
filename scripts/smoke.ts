@@ -19,10 +19,10 @@ async function main(): Promise<void> {
   const parsed = parseGithubUrl(DEMO_URL);
 
   console.log("metadata check…", parsed);
-  await checkRepoMetadata(parsed);
+  const { defaultBranch } = await checkRepoMetadata(parsed);
 
   console.log("clone…", DEMO_URL, "→", sessionId);
-  await cloneRepo(sessionId, DEMO_URL);
+  await cloneRepo(sessionId, DEMO_URL, defaultBranch);
 
   console.log("\n--- list_directory . ---");
   console.dir(await listDirectory(sessionId, { path: "." }), { depth: null });
