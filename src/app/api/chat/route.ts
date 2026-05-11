@@ -1,5 +1,6 @@
 import {
   convertToModelMessages,
+  generateId,
   safeValidateUIMessages,
   stepCountIs,
   streamText,
@@ -117,6 +118,7 @@ export async function POST(req: Request): Promise<Response> {
 
     return result.toUIMessageStreamResponse({
       originalMessages: uiMessages as UIMessage[],
+      generateMessageId: generateId,
       headers: Object.fromEntries(streamHeaders.entries()),
       onError: (error: unknown) => {
         log.error("chat.stream_error", { sessionId, err: error });
